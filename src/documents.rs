@@ -6,6 +6,18 @@ use serde::{Deserialize, Serialize};
 pub struct Document {
     pub id: String,
     pub text: String,
+    pub word_count: usize,
+}
+
+impl Document {
+    pub fn new(id: String, text: String) -> Self {
+        let word_count = text.split_whitespace().count();
+        Document {
+            id,
+            text,
+            word_count,
+        }
+    }
 }
 
 #[derive(Default)]
@@ -54,10 +66,32 @@ mod tests {
         let doc = Document {
             id: "test-id".to_string(),
             text: "This is a test document".to_string(),
+            word_count: 5,
         };
 
         assert_eq!(doc.id, "test-id");
         assert_eq!(doc.text, "This is a test document");
+        assert_eq!(doc.word_count, 5);
+    }
+
+    #[test]
+    fn test_document_from_helper() {
+        let doc = Document::new(
+            "test-id".to_string(),
+            "Hello world this is a test".to_string(),
+        );
+
+        assert_eq!(doc.id, "test-id");
+        assert_eq!(doc.text, "Hello world this is a test");
+        assert_eq!(doc.word_count, 6);
+
+        // Test with empty string
+        let empty_doc = Document::new("empty".to_string(), "".to_string());
+        assert_eq!(empty_doc.word_count, 0);
+
+        // Test with multiple spaces
+        let spaced_doc = Document::new("spaced".to_string(), "word1   word2\t\nword3".to_string());
+        assert_eq!(spaced_doc.word_count, 3);
     }
 
     #[test]
@@ -66,10 +100,11 @@ mod tests {
         let doc = Document {
             id: "doc1".to_string(),
             text: "First document".to_string(),
+            word_count: 2,
         };
 
         store.insert(doc.clone());
-        
+
         let retrieved = store.get("doc1");
         assert!(retrieved.is_some());
         assert_eq!(retrieved.unwrap().text, "First document");
@@ -85,16 +120,18 @@ mod tests {
     #[test]
     fn test_document_store_update() {
         let mut store = DocumentStore::default();
-        
+
         let doc1 = Document {
             id: "doc1".to_string(),
             text: "Original text".to_string(),
+            word_count: 2,
         };
         store.insert(doc1);
 
         let doc2 = Document {
             id: "doc1".to_string(),
             text: "Updated text".to_string(),
+            word_count: 2,
         };
         store.insert(doc2);
 
@@ -105,14 +142,16 @@ mod tests {
     #[test]
     fn test_document_store_iter() {
         let mut store = DocumentStore::default();
-        
+
         let doc1 = Document {
             id: "doc1".to_string(),
             text: "First document".to_string(),
+            word_count: 2,
         };
         let doc2 = Document {
             id: "doc2".to_string(),
             text: "Second document".to_string(),
+            word_count: 2,
         };
 
         store.insert(doc1);
@@ -120,7 +159,7 @@ mod tests {
 
         let documents: Vec<_> = store.iter().collect();
         assert_eq!(documents.len(), 2);
-        
+
         let ids: Vec<&String> = documents.iter().map(|(id, _)| *id).collect();
         assert!(ids.contains(&&"doc1".to_string()));
         assert!(ids.contains(&&"doc2".to_string()));
@@ -131,6 +170,7 @@ mod tests {
         let doc = Document {
             id: "test-id".to_string(),
             text: "Test content".to_string(),
+            word_count: 2,
         };
 
         let cloned = doc.clone();

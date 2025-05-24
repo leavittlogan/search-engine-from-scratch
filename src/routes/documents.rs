@@ -19,11 +19,7 @@ pub async fn handle_create_document(
     Json(document): Json<DocumentInput>,
 ) -> Result<Json<Document>, StatusCode> {
     let id = Uuid::new_v4().to_string();
-
-    let document = Document {
-        id,
-        text: document.text,
-    };
+    let document = Document::new(id, document.text);
 
     state
         .write()
@@ -39,10 +35,7 @@ pub async fn handle_update_document(
     State(state): State<SharedState>,
     Json(document): Json<DocumentInput>,
 ) {
-    let document = Document {
-        id: key,
-        text: document.text,
-    };
+    let document = Document::new(key, document.text);
 
     state.write().unwrap().document_store.insert(document);
 }
@@ -100,7 +93,7 @@ mod test {
         let document_store = DocumentStore::default();
         let app_state = AppState { document_store };
         let shared_state = Arc::new(RwLock::new(app_state));
-        
+
         // Create app with state
         let app = document_routes().with_state(shared_state.clone());
 
@@ -109,9 +102,7 @@ mod test {
             .method(Method::POST)
             .uri("/document")
             .header("content-type", "application/json")
-            .body(Body::from(
-                json!({ "text": "hello world" }).to_string(),
-            ))
+            .body(Body::from(json!({ "text": "hello world" }).to_string()))
             .unwrap();
 
         // Call oneshot and await the result
@@ -123,18 +114,16 @@ mod test {
         let documents: Vec<_> = state.document_store.iter().collect();
         assert_eq!(documents.len(), 1);
         assert_eq!(documents[0].1.text, "hello world");
+        assert_eq!(documents[0].1.word_count, 2);
     }
 
     #[tokio::test]
     async fn get_document() {
         // Create test state with a document
         let mut document_store = DocumentStore::default();
-        let test_doc = Document {
-            id: "test-id".to_string(),
-            text: "test content".to_string(),
-        };
+        let test_doc = Document::new("test-id".to_string(), "test content".to_string());
         document_store.insert(test_doc.clone());
-        
+
         let app_state = AppState { document_store };
         let shared_state = Arc::new(RwLock::new(app_state));
         let app = document_routes().with_state(shared_state);
@@ -170,12 +159,9 @@ mod test {
     async fn update_document() {
         // Create test state with a document
         let mut document_store = DocumentStore::default();
-        let test_doc = Document {
-            id: "test-id".to_string(),
-            text: "original content".to_string(),
-        };
+        let test_doc = Document::new("test-id".to_string(), "test content".to_string());
         document_store.insert(test_doc);
-        
+
         let app_state = AppState { document_store };
         let shared_state = Arc::new(RwLock::new(app_state));
         let app = document_routes().with_state(shared_state.clone());
@@ -184,9 +170,7 @@ mod test {
             .method(Method::PUT)
             .uri("/document/test-id")
             .header("content-type", "application/json")
-            .body(Body::from(
-                json!({ "text": "updated content" }).to_string(),
-            ))
+            .body(Body::from(json!({ "text": "updated content" }).to_string()))
             .unwrap();
 
         let response = app.oneshot(request).await.unwrap();
@@ -197,21 +181,22 @@ mod test {
         let updated_doc = state.document_store.get("test-id").unwrap();
         assert_eq!(updated_doc.text, "updated content");
         assert_eq!(updated_doc.id, "test-id");
+        assert_eq!(updated_doc.word_count, 2);
     }
 
     #[tokio::test]
     async fn get_all_documents() {
         // Create test state with multiple documents
         let mut document_store = DocumentStore::default();
-        document_store.insert(Document {
-            id: "doc1".to_string(),
-            text: "first document".to_string(),
-        });
-        document_store.insert(Document {
-            id: "doc2".to_string(),
-            text: "second document".to_string(),
-        });
-        
+        document_store.insert(Document::new(
+            "doc1".to_string(),
+            "first document".to_string(),
+        ));
+        document_store.insert(Document::new(
+            "doc2".to_string(),
+            "second document".to_string(),
+        ));
+
         let app_state = AppState { document_store };
         let shared_state = Arc::new(RwLock::new(app_state));
         let app = document_routes().with_state(shared_state);
