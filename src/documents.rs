@@ -39,6 +39,10 @@ impl DocumentStore {
     }
 }
 
+// n-grams:
+// split document into words, and calculate n-grams for each word
+// when handling a search request, split query into words and then n-grams. calculate BM25 for each n-gram and add up the score
+
 // to calculate BM25 score:
 // score(document, word) = term_frequency(document, word) * inverse_document_frequency(word)
 //
