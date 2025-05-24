@@ -1,6 +1,6 @@
 # Overview
 
-`search-engine-from-scratch` is a Rust-based search engine implementation from scratch using Axum for the web framework. This is mainly a for-fun project with two goals:
+`search-engine-from-scratch` is a Rust-based search engine implementation using Axum for the web framework. This is mainly a for-fun project with two goals:
 
 - Get familiar with Rust
 - Learn what makes search engines tick
